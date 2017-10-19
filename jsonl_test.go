@@ -1,9 +1,33 @@
 package jsonl
 
 import (
+	"bufio"
 	"bytes"
+	"fmt"
+	"os"
 	"testing"
 )
+
+func TestJSONFileRaw(t *testing.T) {
+	j, err := JSONFileRaw("./test.json")
+	if err != nil {
+		panic(err)
+	}
+	//t.Error(j["root"])
+	fmt.Println(j["root"])
+}
+
+func TestJSONFileObj(t *testing.T) {
+	j, err := JSONFileObj("./test.json")
+	if err != nil {
+		panic(err)
+	}
+	//t.Error(j["root"])
+	fmt.Println(j.Get("root.key", "default"))
+	if j.Get("root.key", "default") != "abc" {
+		t.Error("someth. wrong with JSONFileObj()")
+	}
+}
 
 func TestJSONRaw(t *testing.T) {
 	reader := bytes.NewReader([]byte(`
@@ -18,8 +42,10 @@ func TestJSONRaw(t *testing.T) {
 		t.Error(err)
 		t.Fail()
 	}
-	t.Error(j)
-	t.Error(j["root"])
+	if tmp := j["root"].(map[string]interface{}); tmp["key"] != "abc" {
+		t.Error(j["root"])
+		t.Fail()
+	}
 }
 
 func TestJsonObj(t *testing.T) {
@@ -35,6 +61,27 @@ func TestJsonObj(t *testing.T) {
 		t.Error(err)
 		t.Fail()
 	}
-	t.Error(j)
-	t.Error(j.Get("root.key", "123"))
+	if j.Get("root.key", "123") != "abc" {
+		t.Error("dot-method has some problem")
+	}
+
+	file, err := os.Open("./test.json")
+	if err != nil {
+		t.Fatal(err)
+		t.Fail()
+	}
+	defer file.Close()
+
+	buf := bufio.NewReader(file)
+
+	j2, err := JSONObj(buf)
+	if err != nil {
+		t.Error(err)
+		t.Fail()
+	}
+	t.Error(j2.Get("root.key", "123"))
+	if j2.Get("root.key", "123") != "abc" {
+		t.Error("dot-method has some problem")
+	}
+
 }

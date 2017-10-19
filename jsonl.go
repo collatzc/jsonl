@@ -1,9 +1,11 @@
 package jsonl
 
 import (
+	"bufio"
 	"encoding/json"
 	"io"
 	"io/ioutil"
+	"os"
 	"strings"
 )
 
@@ -32,6 +34,19 @@ func JSONRaw(reader io.Reader) (map[string]interface{}, error) {
 	return jsonData, nil
 }
 
+// JSONFileRaw reads the .json file and  returns raw JSON as map
+func JSONFileRaw(path string) (map[string]interface{}, error) {
+	file, err := os.Open(path)
+	if err != nil {
+		return nil, err
+	}
+	defer file.Close()
+
+	buffer := bufio.NewReader(file)
+
+	return JSONRaw(buffer)
+}
+
 // JSONObj returns the objective JSON
 func JSONObj(reader io.Reader) (IJSON, error) {
 	jsonBytes, err := ioutil.ReadAll(reader)
@@ -45,6 +60,19 @@ func JSONObj(reader io.Reader) (IJSON, error) {
 	}
 
 	return &TJSON{jsonData}, nil
+}
+
+// JSONFileObj reads the .json file and  returns raw JSON as map
+func JSONFileObj(path string) (IJSON, error) {
+	file, err := os.Open(path)
+	if err != nil {
+		return nil, err
+	}
+	defer file.Close()
+
+	buffer := bufio.NewReader(file)
+
+	return JSONObj(buffer)
 }
 
 // Get returns the value by the path of JSON's hierarchy
