@@ -6,6 +6,8 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
+	"regexp"
+	"strconv"
 	"strings"
 )
 
@@ -77,17 +79,38 @@ func JSONFileObj(path string) (IJSON, error) {
 
 // Get returns the value by the path of JSON's hierarchy
 func (tjson *TJSON) Get(key string, defaultValue interface{}) interface{} {
-	paths := strings.Split(key, ".")
-	var thisJSON interface{} = tjson.json
+	var (
+		paths                = strings.Split(key, ".")
+		re                   = regexp.MustCompile(`(.*)\[(\d+)\]`)
+		thisJSON interface{} = tjson.json
+		keys     []string
+	)
 	for _, path := range paths {
 		if len(path) == 0 {
 			continue
 		}
 		if subPath, ok := thisJSON.(map[string]interface{}); ok {
-			if value, exists := subPath[path]; exists {
-				thisJSON = value
+			keys = re.FindStringSubmatch(path)
+			if len(keys) != 3 {
+				if value, exists := subPath[path]; exists {
+					thisJSON = value
+				} else {
+					return defaultValue
+				}
 			} else {
-				return defaultValue
+				if value, exists := subPath[keys[1]]; exists {
+					arrIdx, err := strconv.Atoi(keys[2])
+					if err != nil {
+						return defaultValue
+					}
+					if subPath, ok := value.([]interface{}); ok {
+						thisJSON = subPath[arrIdx]
+					} else {
+						return defaultValue
+					}
+				} else {
+					return defaultValue
+				}
 			}
 		} else if subPath, ok := thisJSON.(map[interface{}]interface{}); ok {
 			if value, exists := subPath[path]; exists {

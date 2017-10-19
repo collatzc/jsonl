@@ -1,10 +1,9 @@
 package jsonl
 
 import (
-	"bufio"
 	"bytes"
 	"fmt"
-	"os"
+	"regexp"
 	"testing"
 )
 
@@ -51,9 +50,18 @@ func TestJSONRaw(t *testing.T) {
 func TestJsonObj(t *testing.T) {
 	reader := bytes.NewReader([]byte(`
 		{
-			"root" : {
-				"key" : "abc"
-			}
+			"root": [
+				{
+					"key": "abc"
+				},
+				{
+					"key": [
+						{
+							"1": "def"
+						}
+					]
+				}
+			]
 		}
 	`))
 	j, err := JSONObj(reader)
@@ -61,11 +69,11 @@ func TestJsonObj(t *testing.T) {
 		t.Error(err)
 		t.Fail()
 	}
-	if j.Get("root.key", "123") != "abc" {
+	if j.Get("root[1].key[0].1", "123") != "def" {
 		t.Error("dot-method has some problem")
 	}
 
-	file, err := os.Open("./test.json")
+	/* file, err := os.Open("./test.json")
 	if err != nil {
 		t.Fatal(err)
 		t.Fail()
@@ -82,6 +90,12 @@ func TestJsonObj(t *testing.T) {
 	t.Error(j2.Get("root.key", "123"))
 	if j2.Get("root.key", "123") != "abc" {
 		t.Error("dot-method has some problem")
-	}
+	} */
 
+}
+
+func TestRegex(t *testing.T) {
+	re := regexp.MustCompile(`(.*)\[(\d+)\]`)
+	keys := re.FindStringSubmatch("abc")
+	t.Error(keys)
 }
