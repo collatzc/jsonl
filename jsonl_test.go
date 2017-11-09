@@ -1,8 +1,10 @@
 package jsonl
 
 import (
+	"bufio"
 	"bytes"
 	"fmt"
+	"os"
 	"regexp"
 	"testing"
 )
@@ -12,7 +14,6 @@ func TestJSONFileRaw(t *testing.T) {
 	if err != nil {
 		panic(err)
 	}
-	//t.Error(j["root"])
 	fmt.Println(j["root"])
 }
 
@@ -21,7 +22,6 @@ func TestJSONFileObj(t *testing.T) {
 	if err != nil {
 		panic(err)
 	}
-	//t.Error(j["root"])
 	fmt.Println(j.Get("root.key", "default"))
 	if j.Get("root.key", "default") != "abc" {
 		t.Error("someth. wrong with JSONFileObj()")
@@ -69,11 +69,12 @@ func TestJsonObj(t *testing.T) {
 		t.Error(err)
 		t.Fail()
 	}
+	t.Log(j.Get("root[1].key[0].1", "123"))
 	if j.Get("root[1].key[0].1", "123") != "def" {
-		t.Error("dot-method has some problem")
+		t.Error("dot-method with array has some problem")
 	}
 
-	/* file, err := os.Open("./test.json")
+	file, err := os.Open("./test.json")
 	if err != nil {
 		t.Fatal(err)
 		t.Fail()
@@ -87,15 +88,13 @@ func TestJsonObj(t *testing.T) {
 		t.Error(err)
 		t.Fail()
 	}
-	t.Error(j2.Get("root.key", "123"))
 	if j2.Get("root.key", "123") != "abc" {
-		t.Error("dot-method has some problem")
-	} */
-
+		t.Error("something wrong with parse from file with the dot-method")
+	}
 }
 
 func TestRegex(t *testing.T) {
 	re := regexp.MustCompile(`(.*)\[(\d+)\]`)
 	keys := re.FindStringSubmatch("abc")
-	t.Error(keys)
+	t.Log(keys)
 }

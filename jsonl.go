@@ -64,7 +64,7 @@ func JSONObj(reader io.Reader) (IJSON, error) {
 	return &TJSON{jsonData}, nil
 }
 
-// JSONFileObj reads the .json file and  returns raw JSON as map
+// JSONFileObj reads the .json file and returns raw JSON as map[string]interface{}
 func JSONFileObj(path string) (IJSON, error) {
 	file, err := os.Open(path)
 	if err != nil {
@@ -77,11 +77,13 @@ func JSONFileObj(path string) (IJSON, error) {
 	return JSONObj(buffer)
 }
 
-// Get returns the value by the path of JSON's hierarchy
+// Get returns the value by the path (using dot-method) of JSON's hierarchy
+// returns `nil` when the `key` has bad format
+// returns the `defaultValue` when there is no def. (index out of range) in the json
 func (tjson *TJSON) Get(key string, defaultValue interface{}) interface{} {
 	var (
 		paths                = strings.Split(key, ".")
-		re                   = regexp.MustCompile(`(.*)\[(\d+)\]`)
+		re                   = regexp.MustCompile(`(.*)\[(\d+)\]$`)
 		thisJSON interface{} = tjson.json
 		keys     []string
 	)
@@ -92,6 +94,7 @@ func (tjson *TJSON) Get(key string, defaultValue interface{}) interface{} {
 		if subPath, ok := thisJSON.(map[string]interface{}); ok {
 			keys = re.FindStringSubmatch(path)
 			if len(keys) != 3 {
+				// !array
 				if value, exists := subPath[path]; exists {
 					thisJSON = value
 				} else {
@@ -99,14 +102,22 @@ func (tjson *TJSON) Get(key string, defaultValue interface{}) interface{} {
 				}
 			} else {
 				if value, exists := subPath[keys[1]]; exists {
+					// need arrIdx is type of int
+					// as index of array must be int, so when it's not an int,
+					// will treat it as an error, nil will return
 					arrIdx, err := strconv.Atoi(keys[2])
 					if err != nil {
-						return defaultValue
+						return nil
 					}
 					if subPath, ok := value.([]interface{}); ok {
+						// need to check the range
+						// out of range is not an error
+						if len(subPath) <= arrIdx {
+							return defaultValue
+						}
 						thisJSON = subPath[arrIdx]
 					} else {
-						return defaultValue
+						return nil
 					}
 				} else {
 					return defaultValue
